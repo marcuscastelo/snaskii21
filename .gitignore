@@ -38,3 +38,8 @@ src/ttsnake.bin
 
 ## end of make
 
+## make install resulting files (assuming --prefix=$(pwd)/dist ##
+
+dist/
+
+## end of make install
