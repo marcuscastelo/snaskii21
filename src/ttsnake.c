@@ -275,10 +275,20 @@ void show_scene(scene_t *scene, int number, int menu)
 }
 
 /* Initialize resources and counters. */
+void update_snake();
 
 void init_game()
 {
+  int ININTIAL_SNAKE_SIZE = 5;
+  int i;
+
   game_state = game_state_settings;
+  snake.direction = right;
+  snake.positions = (pair_t*) malloc(ININTIAL_SNAKE_SIZE * sizeof(pair_t));
+  snake.length = ININTIAL_SNAKE_SIZE;
+  snake.head.x = 0;
+  snake.head.y = 0;
+  for (i = 0; i < snake.length; i++) update_snake();
 }
 
 /* This function plays the game introduction animation. */
@@ -317,13 +327,44 @@ void draw_snake(scene_t *scene)
 {
   int i, j;
   /* Clear inner part of the game scene */
-  for (i = 1; i < NROWS-2; i++)
-    for (j = 1; j < NCOLS-2; j++)
+  for (i = 1; i < NROWS-1; i++)
+    for (j = 1; j < NCOLS-1; j++)
         scene[0][i][j] = ' ';
 
-  scene[0][snake.head.x+1][snake.head.y+1] = SNAKE_HEAD;
+  scene[0][snake.head.y+1][snake.head.x+1] = SNAKE_HEAD;
   for (i = 0; i < snake.length; i++)
-    scene[0][snake.positions[i].x+1][snake.positions[i].y+1] = SNAKE_BODY;
+    scene[0][snake.positions[i].y+1][snake.positions[i].x+1] = SNAKE_BODY;
+}
+
+void update_snake() {
+  int dx = snake.direction == right ? 1 : (snake.direction == left ? -1 : 0);
+  int dy = snake.direction == down ? 1 : (snake.direction == up ? -1 : 0);
+  int i;
+
+  for (i = snake.length - 1; i > 0; i--)
+    snake.positions[i] = snake.positions[i - 1];
+
+  snake.positions[0] = snake.head;
+  snake.head.x += dx;
+  snake.head.y += dy;
+}
+
+int check_intersection(int x, int y) {
+  int i;
+  for (i = 0; i < snake.length; i++)
+    if (snake.positions[i].x == x && snake.positions[i].y == y)
+      return 1;
+  return 0;
+}
+
+int check_collision() {
+  int x = snake.head.x;
+  int y = snake.head.y;
+  if (y < 0 || y >= NROWS-2 || x < 0 || x >= NCOLS-2)
+    return 1;
+  if (check_intersection(x, y))
+    return 1;
+  return 0;
 }
 
 /* This function implements the gameplay loop. */
@@ -343,14 +384,14 @@ void play_game(scene_t *scene)
     if (game_state == game_state_settings)
     {
       draw_settings(scene);
-      show_scene(scene, 2, 0); /* Show scene 00000003 */
+      show_scene(scene, 2, 1); /* Show scene 00000003 */
     }
     else if (game_state == game_state_running)
     {
       /* TODO: draw_snake(scene); */
       draw_snake(scene);
       show_scene(scene, 0, 0); /* Show scene 00000001. */
-      snake.length++;
+      /*snake.length++;
       snake.positions = realloc(snake.positions, snake.length * sizeof(pair_t));
       snake.positions[snake.length - 1] = snake.head;
       snake.head.x++;
@@ -363,15 +404,18 @@ void play_game(scene_t *scene)
       {
         snake.head.y = 0;
         game_state = game_state_gameover;
-      }
+      }*/
+      update_snake();
+      if (check_collision())
+        game_state = game_state_gameover;
     }
     else if (game_state == game_state_paused)
     {
-      show_scene(scene, 3, 0); /* Show scene 00000004 */
+      show_scene(scene, 3, 1); /* Show scene 00000004 */
     }
     else if (game_state == game_state_gameover)
     {
-      show_scene(scene, 2, 1); /* Show scene 00000003 */
+      show_scene(scene, 1, 1); /* Show scene 00000002 */
     }
     how_long.tv_nsec = (game_delay)*1e3; /* Compute delay. */
     nanosleep(&how_long, NULL);
@@ -403,6 +447,26 @@ void *user_input()
         game_state = game_state_running;
       else if (game_state == game_state_running)
         game_state = game_state_paused;
+      break;
+    case 'w':
+      if (game_state == game_state_running)
+        if (snake.direction != down)
+          snake.direction = up;
+      break;
+    case 'a':
+      if (game_state == game_state_running)
+        if (snake.direction != right)
+          snake.direction = left;
+      break;
+    case 's':
+      if (game_state == game_state_running)
+        if (snake.direction != up)
+          snake.direction = down;
+      break;
+    case 'd':
+      if (game_state == game_state_running)
+        if (snake.direction != left)
+          snake.direction = right;
       break;
     default:
       break;
