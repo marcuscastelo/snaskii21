@@ -118,6 +118,20 @@ struct
   int y;                                 /* Coordinate y of the energy block. */
 } energy_block[MAX_ENERGY_BLOCKS_LIMIT]; /* Array of energy blocks. */
 
+/* Game state (settings / paused / running). */
+
+/* TODO: change enum naming convention (snake case is used for variables and functions already) */
+typedef enum
+{
+  game_state_intro,
+  game_state_settings,
+  game_state_paused,
+  game_state_running,
+  game_state_gameover
+} game_state_t;
+
+game_state_t game_state;
+
 /* All chars of one single scene. */
 
 typedef char scene_t[40][90]; /* Maximum values. TODO: allocate dyamically */
@@ -264,6 +278,7 @@ void show_scene(scene_t *scene, int number, int menu)
 
 void init_game()
 {
+  game_state = game_state_settings;
 }
 
 /* This function plays the game introduction animation. */
@@ -279,7 +294,7 @@ void play_movie(scene_t *scene, int nscenes)
   {
     wclear(main_window);                  /* Clear screen.    */
     wrefresh(main_window);                /* Refresh screen.  */
-    show_scene(scene, k, 0);               /* Show k-th scene .*/
+    show_scene(scene, k, 0);              /* Show k-th scene .*/
     how_long.tv_nsec = (movie_delay)*1e3; /* Compute delay. */
     nanosleep(&how_long, NULL);           /* Apply delay. */
   }
@@ -298,11 +313,23 @@ void draw_settings(scene_t *scene)
   memcpy(&scene[2][22][12], buffer, strlen(buffer));
 }
 
+void draw_snake(scene_t *scene)
+{
+  int i, j;
+  /* Clear inner part of the game scene */
+  for (i = 1; i < NROWS-2; i++)
+    for (j = 1; j < NCOLS-2; j++)
+        scene[0][i][j] = ' ';
+
+  scene[0][snake.head.x+1][snake.head.y+1] = SNAKE_HEAD;
+  for (i = 0; i < snake.length; i++)
+    scene[0][snake.positions[i].x+1][snake.positions[i].y+1] = SNAKE_BODY;
+}
+
 /* This function implements the gameplay loop. */
 
 void play_game(scene_t *scene)
 {
-
   struct timespec how_long;
   how_long.tv_sec = 0;
 
@@ -313,10 +340,43 @@ void play_game(scene_t *scene)
     clear();   /* Clear screen. */
     refresh(); /* Refresh screen. */
 
-    draw_settings(scene);
-    show_scene(scene, 2, 1);
+    if (game_state == game_state_settings)
+    {
+      draw_settings(scene);
+      show_scene(scene, 2, 0); /* Show scene 00000003 */
+    }
+    else if (game_state == game_state_running)
+    {
+      /* TODO: draw_snake(scene); */
+      draw_snake(scene);
+      show_scene(scene, 0, 0); /* Show scene 00000001. */
+      snake.length++;
+      snake.positions = realloc(snake.positions, snake.length * sizeof(pair_t));
+      snake.positions[snake.length - 1] = snake.head;
+      snake.head.x++;
+      if (snake.head.x >= NROWS-2)
+      {
+        snake.head.x = 0;
+        snake.head.y++;
+      }
+      if (snake.head.y >= NCOLS-2)
+      {
+        snake.head.y = 0;
+        game_state = game_state_gameover;
+      }
+    }
+    else if (game_state == game_state_paused)
+    {
+      show_scene(scene, 3, 0); /* Show scene 00000004 */
+    }
+    else if (game_state == game_state_gameover)
+    {
+      show_scene(scene, 2, 1); /* Show scene 00000003 */
+    }
     how_long.tv_nsec = (game_delay)*1e3; /* Compute delay. */
     nanosleep(&how_long, NULL);
+
+    
   }
 }
 
@@ -334,6 +394,15 @@ void *user_input()
     {
     case 'q':
       kill(0, SIGINT);
+      break;
+    case 'p':
+      /* TODO: input polling system to avoid writing game-related code inside this function */
+      if (game_state == game_state_settings)
+        game_state = game_state_running;
+      else if (game_state == game_state_paused)
+        game_state = game_state_running;
+      else if (game_state == game_state_running)
+        game_state = game_state_paused;
       break;
     default:
       break;
@@ -450,6 +519,7 @@ int main(int argc, char **argv)
 
   go_on = 1; /* User may skip intro (q). */
 
+  game_state = game_state_intro;
   play_movie(intro_scene, nscenes);
 
   /* Play game. */
