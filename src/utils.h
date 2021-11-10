@@ -18,7 +18,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #ifndef UTILS_H
 #define UTILS_H
 
@@ -30,22 +29,25 @@
 
 /* Report a system error and exit. */
 
-#define sysfatal(expression) \
-  do { if ((expression)) {fprintf (stderr, "%s: %d: %s: %s\n",\
-    __FILE__, __LINE__, __func__, strerror (errno)); \
-      exit (EXIT_FAILURE);}} while (0)
-
+#define sysfatal(expression)                                     \
+   do                                                            \
+   {                                                             \
+      if ((expression))                                          \
+      {                                                          \
+         fprintf(stderr, "%s: %d: %s: %s\n",                     \
+                 __FILE__, __LINE__, __func__, strerror(errno)); \
+         exit(EXIT_FAILURE);                                     \
+      }                                                          \
+   } while (0)
 
 /* Subtract the ‘struct timeval’ values X and Y, storing the result in RESULT.
    Return 1 if the difference is negative, otherwise 0. */
 
-int
-timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y);
+int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y);
 
 /* Add the ‘struct timeval’ values X and Y, storing the result in RESULT. */
 
-void
-timeval_add (struct timeval *result, struct timeval *x, struct timeval *y);
+void timeval_add(struct timeval *result, struct timeval *x, struct timeval *y);
 
 /* Shows help screen. Exit code is -1 if isError is set to true */
 
