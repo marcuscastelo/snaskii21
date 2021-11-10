@@ -125,7 +125,7 @@ typedef char scene_t[40][90]; /* Maximum values. TODO: allocate dyamically */
 /* Read all the scenes in the 'dir' directory, save it in 'scene' and
    return the number of readed scenes. */
 
-int readscenes(char *dir, char *data_dir, scene_t **scene, int nscenes)
+int read_scenes(char *dir, char *data_dir, scene_t **scene, int nscenes)
 {
   int i, j, k;
   FILE *file;
@@ -226,7 +226,7 @@ void draw(scene_t *scene, int number)
 /* Draw scene indexed by number, get some statics and repeat.
    If menu is true, draw the game controls.*/
 
-void showscene(scene_t *scene, int number, int menu)
+void show_scene(scene_t *scene, int number, int menu)
 {
   double fps;
   int i;
@@ -268,7 +268,7 @@ void init_game()
 
 /* This function plays the game introduction animation. */
 
-void playmovie(scene_t *scene, int nscenes)
+void play_movie(scene_t *scene, int nscenes)
 {
 
   int k;
@@ -279,7 +279,7 @@ void playmovie(scene_t *scene, int nscenes)
   {
     wclear(main_window);                  /* Clear screen.    */
     wrefresh(main_window);                /* Refresh screen.  */
-    showscene(scene, k, 0);               /* Show k-th scene .*/
+    show_scene(scene, k, 0);               /* Show k-th scene .*/
     how_long.tv_nsec = (movie_delay)*1e3; /* Compute delay. */
     nanosleep(&how_long, NULL);           /* Apply delay. */
   }
@@ -300,7 +300,7 @@ void draw_settings(scene_t *scene)
 
 /* This function implements the gameplay loop. */
 
-void playgame(scene_t *scene)
+void play_game(scene_t *scene)
 {
 
   struct timespec how_long;
@@ -314,7 +314,7 @@ void playgame(scene_t *scene)
     refresh(); /* Refresh screen. */
 
     draw_settings(scene);
-    showscene(scene, 2, 1);
+    show_scene(scene, 2, 1);
     how_long.tv_nsec = (game_delay)*1e3; /* Compute delay. */
     nanosleep(&how_long, NULL);
   }
@@ -323,7 +323,7 @@ void playgame(scene_t *scene)
 /* Process user input.
    This function runs in a separate thread. */
 
-void *userinput()
+void *user_input()
 {
   int c;
   while (1)
@@ -441,27 +441,27 @@ int main(int argc, char **argv)
 
   /* Handle game controls in a different thread. */
 
-  rs = pthread_create(&pthread, NULL, userinput, NULL);
+  rs = pthread_create(&pthread, NULL, user_input, NULL);
   sysfatal(rs);
 
   /* Play intro. */
 
-  nscenes = readscenes(SCENE_DIR_INTRO, curr_data_dir, &intro_scene, N_INTRO_SCENES);
+  nscenes = read_scenes(SCENE_DIR_INTRO, curr_data_dir, &intro_scene, N_INTRO_SCENES);
 
   go_on = 1; /* User may skip intro (q). */
 
-  playmovie(intro_scene, nscenes);
+  play_movie(intro_scene, nscenes);
 
   /* Play game. */
 
-  readscenes(SCENE_DIR_GAME, curr_data_dir, &game_scene, N_GAME_SCENES);
+  read_scenes(SCENE_DIR_GAME, curr_data_dir, &game_scene, N_GAME_SCENES);
 
   go_on = 1;
 
   gettimeofday(&beginning, NULL);
 
   init_game();
-  playgame(game_scene);
+  play_game(game_scene);
 
   endwin();
   free(intro_scene);
