@@ -417,7 +417,10 @@ void play_game(scene_t *scene)
     {
       show_scene(scene, 1, 1); /* Show scene 00000002 */
     }
-    how_long.tv_nsec = (game_delay)*1e3; /* Compute delay. */
+    float direction_multiplier = 1.0;
+    if (snake.direction == up || snake.direction == down)
+      direction_multiplier = 1.5;
+    how_long.tv_nsec = (game_delay * direction_multiplier)*1e3; /* Compute delay. */
     nanosleep(&how_long, NULL);
 
     
